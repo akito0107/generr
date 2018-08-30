@@ -10,6 +10,7 @@ import (
 
 	"io/ioutil"
 
+	"github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +31,10 @@ func Parse(r io.Reader, tp string) (string, *ast.TypeSpec, error) {
 		case *ast.File:
 			pkgName = x.Name.Name
 		case *ast.TypeSpec:
+			pp.Println(x)
+			if _, ok := x.Type.(*ast.InterfaceType); !ok {
+				return true
+			}
 			if x.Name.Name == tp {
 				ts = x
 				return false
