@@ -38,11 +38,20 @@ func (g *Generator) AppendPackage() {
 }
 
 func (g *Generator) AppendCheckFunction() error {
-	d, err := appendCheckFunction(g.f.Decls, g.ts)
+	d, err := appendCheckFunction(g.ts)
 	if err != nil {
 		return err
 	}
-	g.f.Decls = d
+	g.f.Decls = append(g.f.Decls, d...)
+	return nil
+}
+
+func (g *Generator) AppendErrorImplementation() error {
+	d, err := appendErrorImplementation()
+	if err != nil {
+		return err
+	}
+	g.f.Decls = append(g.f.Decls, d...)
 	return nil
 }
 
@@ -53,7 +62,7 @@ func (g *Generator) Out(w io.Writer, filename string) error {
 	return nil
 }
 
-func appendCheckFunction(decls []ast.Decl, ts *ast.TypeSpec) ([]ast.Decl, error) {
+func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	it, ok := ts.Type.(*ast.InterfaceType)
 	if !ok {
 		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
@@ -145,25 +154,32 @@ func appendCheckFunction(decls []ast.Decl, ts *ast.TypeSpec) ([]ast.Decl, error)
 
 	name := "Is" + strcase.ToCamel(ts.Name.Name)
 
-	decls = append(decls, &ast.FuncDecl{
-		Name: ast.NewIdent(name),
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{
-				List: []*ast.Field{
-					{
-						Names: []*ast.Ident{ast.NewIdent("err")},
-						Type:  ast.NewIdent("error"),
+	decls := []ast.Decl{
+		&ast.FuncDecl{
+			Name: ast.NewIdent(name),
+			Type: &ast.FuncType{
+				Params: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Names: []*ast.Ident{ast.NewIdent("err")},
+							Type:  ast.NewIdent("error"),
+						},
 					},
 				},
+				Results: &ast.FieldList{
+					List: rtTypes,
+				},
 			},
-			Results: &ast.FieldList{
-				List: rtTypes,
+			Body: &ast.BlockStmt{
+				List: bodyStmt,
 			},
 		},
-		Body: &ast.BlockStmt{
-			List: bodyStmt,
-		},
-	})
+	}
 
 	return decls, nil
+}
+
+func appendErrorImplementation() ([]ast.Decl, error) {
+
+	return nil, nil
 }
