@@ -54,18 +54,98 @@ func (g *Generator) Out(w io.Writer, filename string) error {
 }
 
 func appendCheckFunction(decls []ast.Decl, ts *ast.TypeSpec) ([]ast.Decl, error) {
-	_, ok := ts.Type.(*ast.InterfaceType)
+	it, ok := ts.Type.(*ast.InterfaceType)
 	if !ok {
 		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
 	}
+	ft, ok := it.Methods.List[0].Type.(*ast.FuncType)
+	if !ok {
+		return nil, errors.Errorf("type %+v has no function", it)
+	}
+	var resultsList []*ast.Field
+	if ft.Results != nil {
+		resultsList = ft.Results.List
+	}
+
 	rtTypes := []*ast.Field{
 		{
 			Type: ast.NewIdent("bool"),
 		},
 	}
-	rtTypes = append(rtTypes)
+
+	var bodyStmt []ast.Stmt
+	var ifbodyStmt []ast.Stmt
+	var returnExprs []ast.Expr
+
+	if len(resultsList) != 0 {
+		var list []ast.Expr
+
+		for _, r := range resultsList {
+			rtTypes = append(rtTypes, &ast.Field{
+				Type: r.Type,
+			})
+			bodyStmt = append(bodyStmt, &ast.DeclStmt{
+				Decl: &ast.GenDecl{
+					Tok: token.VAR,
+					Specs: []ast.Spec{
+						&ast.TypeSpec{
+							Name: r.Names[0],
+							Type: r.Type,
+						},
+					},
+				},
+			})
+			list = append(list, r.Names[0])
+			returnExprs = append(returnExprs, r.Names[0])
+		}
+
+		ifbodyStmt = append(ifbodyStmt, &ast.AssignStmt{
+			Tok: token.ASSIGN,
+			Lhs: list,
+			Rhs: []ast.Expr{&ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X:   ast.NewIdent("e"),
+					Sel: it.Methods.List[0].Names[0],
+				},
+			}},
+		})
+	}
+
+	ifresults := []ast.Expr{ast.NewIdent("true")}
+	ifresults = append(ifresults, returnExprs...)
+	ifbodyStmt = append(ifbodyStmt, &ast.ReturnStmt{
+		Results: ifresults,
+	})
+
+	bodyStmt = append(bodyStmt, &ast.IfStmt{
+		Init: &ast.AssignStmt{
+			Lhs: []ast.Expr{
+				ast.NewIdent("e"),
+				ast.NewIdent("ok"),
+			},
+			Rhs: []ast.Expr{
+				&ast.TypeAssertExpr{
+					X:    ast.NewIdent("err"),
+					Type: ts.Name,
+				},
+			},
+			Tok: token.DEFINE,
+		},
+		Cond: ast.NewIdent("ok"),
+		Body: &ast.BlockStmt{
+			List: ifbodyStmt,
+		},
+	})
+
+	bodyresults := []ast.Expr{ast.NewIdent("false")}
+	bodyresults = append(bodyresults, returnExprs...)
+	bodyStmt = append(bodyStmt, &ast.ReturnStmt{
+		Results: bodyresults,
+	})
+
 	name := "Is" + strcase.ToCamel(ts.Name.Name)
-	a := &ast.FuncDecl{
+
+	decls = append(decls, &ast.FuncDecl{
 		Name: ast.NewIdent(name),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
@@ -81,41 +161,9 @@ func appendCheckFunction(decls []ast.Decl, ts *ast.TypeSpec) ([]ast.Decl, error)
 			},
 		},
 		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.IfStmt{
-					Init: &ast.AssignStmt{
-						Lhs: []ast.Expr{
-							ast.NewIdent("e"),
-							ast.NewIdent("ok"),
-						},
-						Rhs: []ast.Expr{
-							&ast.TypeAssertExpr{
-								X:    ast.NewIdent("err"),
-								Type: ts.Name,
-							},
-						},
-						Tok: token.DEFINE,
-					},
-					Cond: ast.NewIdent("ok"),
-					Body: &ast.BlockStmt{
-						List: []ast.Stmt{
-							&ast.ReturnStmt{
-								Results: []ast.Expr{
-									ast.NewIdent("true"),
-								},
-							},
-						},
-					},
-				},
-				&ast.ReturnStmt{
-					Results: []ast.Expr{
-						ast.NewIdent("false"),
-					},
-				},
-			},
+			List: bodyStmt,
 		},
-	}
-	decls = append(decls, a)
+	})
 
 	return decls, nil
 }

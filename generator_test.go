@@ -24,14 +24,10 @@ func TestGenerator_AppendPackage(t *testing.T) {
 }
 
 func TestGenerator_AppendCheckFunction(t *testing.T) {
-	t.Run("return no value", func(t *testing.T) {
-		src := `package main
 
-type userNotFound interface {
-	UserNotFound()
-}
-`
-		n, s, err := Parse(bytes.NewBufferString(src), "userNotFound")
+	helper := func(t *testing.T, src, typename, exp string) {
+		t.Helper()
+		n, s, err := Parse(bytes.NewBufferString(src), typename)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +36,20 @@ type userNotFound interface {
 		if err := g.AppendCheckFunction(); err != nil {
 			t.Fatal(err)
 		}
+		var buf bytes.Buffer
+		format.Node(&buf, token.NewFileSet(), g.f)
+		if act := buf.String(); act != exp {
+			t.Error(diff.LineDiff(exp, act))
+		}
+	}
 
+	t.Run("return no value", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound()
+}
+`
 		exp := `package main
 
 func IsUserNotFound(err error) bool {
@@ -50,11 +59,7 @@ func IsUserNotFound(err error) bool {
 	return false
 }
 `
-		var buf bytes.Buffer
-		format.Node(&buf, token.NewFileSet(), g.f)
-		if act := buf.String(); act != exp {
-			t.Error(diff.LineDiff(exp, act))
-		}
+		helper(t, src, "userNotFound", exp)
 	})
 
 	t.Run("return int value", func(t *testing.T) {
@@ -64,15 +69,6 @@ type userNotFound interface {
 	UserNotFound() (id int64)
 }
 `
-		n, s, err := Parse(bytes.NewBufferString(src), "userNotFound")
-		if err != nil {
-			t.Fatal(err)
-		}
-		g := NewGenerator(n, s)
-		g.AppendPackage()
-		if err := g.AppendCheckFunction(); err != nil {
-			t.Fatal(err)
-		}
 
 		exp := `package main
 
@@ -85,10 +81,29 @@ func IsUserNotFound(err error) (bool, int64) {
 	return false, id
 }
 `
-		var buf bytes.Buffer
-		format.Node(&buf, token.NewFileSet(), g.f)
-		if act := buf.String(); act != exp {
-			t.Error(diff.LineDiff(exp, act))
-		}
+		helper(t, src, "userNotFound", exp)
+	})
+
+	t.Run("return multi value value", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound() (id int64, name string)
+}
+`
+
+		exp := `package main
+
+func IsUserNotFound(err error) (bool, int64, string) {
+	var id int64
+	var name string
+	if e, ok := err.(userNotFound); ok {
+		id, name = e.UserNotFound()
+		return true, id, name
+	}
+	return false, id, name
+}
+`
+		helper(t, src, "userNotFound", exp)
 	})
 }
