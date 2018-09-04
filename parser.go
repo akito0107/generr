@@ -10,18 +10,12 @@ import (
 
 	"io/ioutil"
 
-	"strings"
-
 	"github.com/pkg/errors"
 )
 
 //go:generate generr -type=typeNotFound
 type typeNotFound interface {
-	TypeNotFound() (typename string)
-}
-
-func IsTypeNotFound(err error) bool {
-	return strings.HasPrefix(err.Error(), "typename: ")
+	TypeNotFound()
 }
 
 func Parse(r io.Reader, tp string) (string, *ast.TypeSpec, error) {

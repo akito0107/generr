@@ -33,6 +33,18 @@
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
   version = "v1.0.0"
 
+[[projects]]
+  branch = "master"
+  digest = "1:a05bd2d296bc727082abcb63ff52615b4dcc6219d8b61e99fd83d605dc779a18"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "imports",
+    "internal/fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "7ca132754999accbaa5c1735eda29e7ce0f3bf03"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -40,6 +52,7 @@
     "github.com/andreyvit/diff",
     "github.com/iancoleman/strcase",
     "github.com/pkg/errors",
+    "golang.org/x/tools/imports",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
