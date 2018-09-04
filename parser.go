@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate generr -type=typeNotFound
+//go:generate generr -type=typeNotFound -impl
 type typeNotFound interface {
 	TypeNotFound()
 }
@@ -49,7 +49,7 @@ func Parse(r io.Reader, tp string) (string, *ast.TypeSpec, error) {
 	})
 
 	if ts == nil {
-		return "", nil, errors.New("typename: %s not found")
+		return "", nil, &TypeNotFound{}
 	}
 
 	return pkgName, ts, nil
