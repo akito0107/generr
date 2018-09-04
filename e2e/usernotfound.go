@@ -1,6 +1,6 @@
 package e2e
 
-//go:generate generr -type=notFound -impl
+//go:generate generr -type=userNotFound -impl
 type userNotFound interface {
 	UserNotFound() (id int64)
 }
