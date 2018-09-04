@@ -53,7 +53,7 @@ type userNotFound interface {
 		exp := `package main
 
 func IsUserNotFound(err error) bool {
-	if e, ok := err.(userNotFound); ok {
+	if _, ok := err.(userNotFound); ok {
 		return true
 	}
 	return false
@@ -141,9 +141,59 @@ type UserNotFound struct {
 }
 
 func (e *UserNotFound) UserNotFound() {
+	return
 }
 func (e *UserNotFound) Error() string {
 	return fmt.Sprint("userNotFound")
+}
+`
+		helper(t, src, "userNotFound", exp)
+	})
+
+	t.Run("return int value", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound() (id int64)
+}
+`
+
+		exp := `package main
+
+type UserNotFound struct {
+	Id int64
+}
+
+func (e *UserNotFound) UserNotFound() int64 {
+	return e.Id
+}
+func (e *UserNotFound) Error() string {
+	return fmt.Sprintf("userNotFound Id: %v", e.Id)
+}
+`
+		helper(t, src, "userNotFound", exp)
+	})
+
+	t.Run("return multiple value", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound() (id int64, name string)
+}
+`
+
+		exp := `package main
+
+type UserNotFound struct {
+	Id   int64
+	Name string
+}
+
+func (e *UserNotFound) UserNotFound() (int64, string) {
+	return e.Id, e.Name
+}
+func (e *UserNotFound) Error() string {
+	return fmt.Sprintf("userNotFound Id: %v Name: %v", e.Id, e.Name)
 }
 `
 		helper(t, src, "userNotFound", exp)

@@ -84,12 +84,14 @@ func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 		},
 	}
 
+	assignStr := "_"
 	var bodyStmt []ast.Stmt
 	var ifbodyStmt []ast.Stmt
 	var returnExprs []ast.Expr
 
 	if len(resultsList) != 0 {
 		var list []ast.Expr
+		assignStr = "e"
 
 		for _, r := range resultsList {
 			rtTypes = append(rtTypes, &ast.Field{
@@ -131,7 +133,7 @@ func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	bodyStmt = append(bodyStmt, &ast.IfStmt{
 		Init: &ast.AssignStmt{
 			Lhs: []ast.Expr{
-				ast.NewIdent("e"),
+				ast.NewIdent(assignStr),
 				ast.NewIdent("ok"),
 			},
 			Rhs: []ast.Expr{
@@ -186,7 +188,7 @@ func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	if !ok {
 		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
 	}
-	_, ok = it.Methods.List[0].Type.(*ast.FuncType)
+	ft, ok := it.Methods.List[0].Type.(*ast.FuncType)
 	if !ok {
 		return nil, errors.Errorf("type %+v has no function", it)
 	}
@@ -194,13 +196,60 @@ func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	var decls []ast.Decl
 	name := strcase.ToCamel(ts.Name.Name)
 
+	var fields []*ast.Field
+	var rtTypes []*ast.Field
+	var rtExprs []ast.Expr
+	errorReturnExpr := &ast.CallExpr{
+		Fun: &ast.SelectorExpr{
+			X:   ast.NewIdent("fmt"),
+			Sel: ast.NewIdent("Sprint"),
+		},
+		Args: []ast.Expr{
+			ast.NewIdent(strconv.Quote(ts.Name.Name)),
+		},
+	}
+
+	if ft.Results != nil {
+		message := ts.Name.Name
+		for _, f := range ft.Results.List {
+			camelName := strcase.ToCamel(f.Names[0].Name)
+			fields = append(fields, &ast.Field{
+				Names: []*ast.Ident{
+					ast.NewIdent(camelName),
+				},
+				Type: f.Type,
+			})
+
+			rtTypes = append(rtTypes, &ast.Field{
+				Type: f.Type,
+			})
+
+			rtExprs = append(rtExprs, &ast.SelectorExpr{
+				X:   ast.NewIdent("e"),
+				Sel: ast.NewIdent(camelName),
+			})
+			message = fmt.Sprintf("%s %s: %s", message, camelName, "%v")
+		}
+		args := []ast.Expr{ast.NewIdent(strconv.Quote(message))}
+		args = append(args, rtExprs...)
+		errorReturnExpr = &ast.CallExpr{
+			Fun: &ast.SelectorExpr{
+				X:   ast.NewIdent("fmt"),
+				Sel: ast.NewIdent("Sprintf"),
+			},
+			Args: args,
+		}
+	}
+
 	decls = append(decls, &ast.GenDecl{
 		Tok: token.TYPE,
 		Specs: []ast.Spec{
 			&ast.TypeSpec{
 				Name: ast.NewIdent(name),
 				Type: &ast.StructType{
-					Fields: &ast.FieldList{},
+					Fields: &ast.FieldList{
+						List: fields,
+					},
 				},
 			},
 		},
@@ -216,10 +265,18 @@ func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
 			},
 		},
 		Type: &ast.FuncType{
-			Params:  &ast.FieldList{},
-			Results: &ast.FieldList{},
+			Params: &ast.FieldList{},
+			Results: &ast.FieldList{
+				List: rtTypes,
+			},
 		},
-		Body: &ast.BlockStmt{},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.ReturnStmt{
+					Results: rtExprs,
+				},
+			},
+		},
 		Name: ast.NewIdent(name),
 	})
 
@@ -246,15 +303,7 @@ func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
 			List: []ast.Stmt{
 				&ast.ReturnStmt{
 					Results: []ast.Expr{
-						&ast.CallExpr{
-							Fun: &ast.SelectorExpr{
-								X:   ast.NewIdent("fmt"),
-								Sel: ast.NewIdent("Sprint"),
-							},
-							Args: []ast.Expr{
-								ast.NewIdent(strconv.Quote(ts.Name.Name)),
-							},
-						},
+						errorReturnExpr,
 					},
 				},
 			},
