@@ -8,6 +8,8 @@ import (
 	"go/format"
 	"go/token"
 
+	"strconv"
+
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 )
@@ -47,7 +49,7 @@ func (g *Generator) AppendCheckFunction() error {
 }
 
 func (g *Generator) AppendErrorImplementation() error {
-	d, err := appendErrorImplementation()
+	d, err := appendErrorImplementation(g.ts)
 	if err != nil {
 		return err
 	}
@@ -179,7 +181,86 @@ func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	return decls, nil
 }
 
-func appendErrorImplementation() ([]ast.Decl, error) {
+func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
+	it, ok := ts.Type.(*ast.InterfaceType)
+	if !ok {
+		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
+	}
+	_, ok = it.Methods.List[0].Type.(*ast.FuncType)
+	if !ok {
+		return nil, errors.Errorf("type %+v has no function", it)
+	}
 
-	return nil, nil
+	var decls []ast.Decl
+	name := strcase.ToCamel(ts.Name.Name)
+
+	decls = append(decls, &ast.GenDecl{
+		Tok: token.TYPE,
+		Specs: []ast.Spec{
+			&ast.TypeSpec{
+				Name: ast.NewIdent(name),
+				Type: &ast.StructType{
+					Fields: &ast.FieldList{},
+				},
+			},
+		},
+	})
+
+	decls = append(decls, &ast.FuncDecl{
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{ast.NewIdent("e")},
+					Type:  ast.NewIdent("*" + name),
+				},
+			},
+		},
+		Type: &ast.FuncType{
+			Params:  &ast.FieldList{},
+			Results: &ast.FieldList{},
+		},
+		Body: &ast.BlockStmt{},
+		Name: ast.NewIdent(name),
+	})
+
+	decls = append(decls, &ast.FuncDecl{
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{ast.NewIdent("e")},
+					Type:  ast.NewIdent("*" + name),
+				},
+			},
+		},
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{},
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Type: ast.NewIdent("string"),
+					},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.ReturnStmt{
+					Results: []ast.Expr{
+						&ast.CallExpr{
+							Fun: &ast.SelectorExpr{
+								X:   ast.NewIdent("fmt"),
+								Sel: ast.NewIdent("Sprint"),
+							},
+							Args: []ast.Expr{
+								ast.NewIdent(strconv.Quote(ts.Name.Name)),
+							},
+						},
+					},
+				},
+			},
+		},
+		Name: ast.NewIdent("Error"),
+	})
+
+	return decls, nil
 }
