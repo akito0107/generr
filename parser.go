@@ -10,8 +10,19 @@ import (
 
 	"io/ioutil"
 
+	"strings"
+
 	"github.com/pkg/errors"
 )
+
+//go:generate generr -type=typeNotFound
+type typeNotFound interface {
+	TypeNotFound() (typename string)
+}
+
+func IsTypeNotFound(err error) bool {
+	return strings.HasPrefix(err.Error(), "typename: ")
+}
 
 func Parse(r io.Reader, tp string) (string, *ast.TypeSpec, error) {
 	src, err := ioutil.ReadAll(r)
@@ -44,7 +55,7 @@ func Parse(r io.Reader, tp string) (string, *ast.TypeSpec, error) {
 	})
 
 	if ts == nil {
-		return "", nil, errors.Errorf("typename: %s not found", tp)
+		return "", nil, errors.New("typename: %s not found")
 	}
 
 	return pkgName, ts, nil
