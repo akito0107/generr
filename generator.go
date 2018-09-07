@@ -1,16 +1,13 @@
 package generr
 
 import (
-	"io"
-
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/format"
 	"go/token"
-
+	"io"
 	"strconv"
-
-	"bytes"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"

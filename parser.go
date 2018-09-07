@@ -1,13 +1,10 @@
 package generr
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/token"
-
-	"go/ast"
-
 	"io"
-
 	"io/ioutil"
 
 	"github.com/pkg/errors"

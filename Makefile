@@ -6,9 +6,12 @@ PACKAGENAME := github.com/akito0107/generr
 
 .PHONY: setup dep test main clean install
 
-all: main
+all: gen build
 
-main:
+gen:
+	go generate
+
+build:
 	go build -ldflags "$(LDFLAGS)" -o bin/generr cmd/generr/main.go
 
 ## Install dependencies
