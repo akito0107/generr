@@ -25,6 +25,9 @@ dep:
 test:
 	go test -v .
 
+test/cover:
+	go test -v -coverprofile=out .
+
 install:
 	go install $(PACKAGENAME)/cmd/generr
 

@@ -7,6 +7,7 @@ jobs:
 
     environment:
       DEP_VERSION: 0.5.0
+      CC_TEST_REPORTER_ID: 1a73b96326a43b208eceaf09cbf2fe7448d477c83920d2283e1b381e8a2ffa51
 
     steps:
       - checkout
@@ -15,7 +16,14 @@ jobs:
       - run: make install
       - run:
           name: build
-          command: make
+          command: make      
       - run:
-          name: run unit tests
-          command: make test
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run: ./cc-test-reporter before-build
+      - run: make test/cover
+      - run: ./cc-test-reporter format-coverage --input-type gocov out
+      - run: ./cc-test-reporter upload-coverage
+
