@@ -1,5 +1,8 @@
 # generr
 
+[![CircleCI](https://circleci.com/gh/akito0107/generr.svg?style=svg)](https://circleci.com/gh/akito0107/generr)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/maintainability)](https://codeclimate.com/github/akito0107/generr/maintainability)[![Test Coverage](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/test_coverage)](https://codeclimate.com/github/akito0107/generr/test_coverage)
+
 generate error utilities for golang.
 
 Inspired by [BANZAI CLOUD's Error Handling Practices in Go](https://banzaicloud.com/blog/error-handling-go/),
