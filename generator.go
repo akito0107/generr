@@ -48,8 +48,8 @@ func (g *Generator) AppendCheckFunction() error {
 	return nil
 }
 
-func (g *Generator) AppendErrorImplementation() error {
-	d, err := appendErrorImplementation(g.ts)
+func (g *Generator) AppendErrorImplementation(message string) error {
+	d, err := appendErrorImplementation(g.ts, message)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 	return decls, nil
 }
 
-func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
+func appendErrorImplementation(ts *ast.TypeSpec, mes string) ([]ast.Decl, error) {
 	it, ok := ts.Type.(*ast.InterfaceType)
 	if !ok {
 		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
@@ -237,7 +237,10 @@ func appendErrorImplementation(ts *ast.TypeSpec) ([]ast.Decl, error) {
 			})
 			message = fmt.Sprintf("%s %s: %s", message, camelName, "%v")
 		}
-		args := []ast.Expr{ast.NewIdent(strconv.Quote(message))}
+		if mes == "" {
+			mes = message
+		}
+		args := []ast.Expr{ast.NewIdent(strconv.Quote(mes))}
 		args = append(args, rtExprs...)
 		errorReturnExpr = &ast.CallExpr{
 			Fun: &ast.SelectorExpr{

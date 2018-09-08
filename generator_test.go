@@ -110,7 +110,7 @@ func IsUserNotFound(err error) (bool, int64, string) {
 
 func TestGenerator_AppendErrorImplementation(t *testing.T) {
 
-	helper := func(t *testing.T, src, typename, exp string) {
+	helper := func(t *testing.T, src, typename, exp string, msg string) {
 		t.Helper()
 		n, s, err := Parse(bytes.NewBufferString(src), typename)
 		if err != nil {
@@ -118,7 +118,7 @@ func TestGenerator_AppendErrorImplementation(t *testing.T) {
 		}
 		g := NewGenerator(n, s)
 		g.AppendPackage()
-		if err := g.AppendErrorImplementation(); err != nil {
+		if err := g.AppendErrorImplementation(msg); err != nil {
 			t.Fatal(err)
 		}
 		var buf bytes.Buffer
@@ -147,7 +147,7 @@ func (e *UserNotFound) Error() string {
 	return fmt.Sprint("userNotFound")
 }
 `
-		helper(t, src, "userNotFound", exp)
+		helper(t, src, "userNotFound", exp, "")
 	})
 
 	t.Run("return int value", func(t *testing.T) {
@@ -171,7 +171,7 @@ func (e *UserNotFound) Error() string {
 	return fmt.Sprintf("userNotFound Id: %v", e.Id)
 }
 `
-		helper(t, src, "userNotFound", exp)
+		helper(t, src, "userNotFound", exp, "")
 	})
 
 	t.Run("return multiple value", func(t *testing.T) {
@@ -196,6 +196,32 @@ func (e *UserNotFound) Error() string {
 	return fmt.Sprintf("userNotFound Id: %v Name: %v", e.Id, e.Name)
 }
 `
-		helper(t, src, "userNotFound", exp)
+		helper(t, src, "userNotFound", exp, "")
+	})
+
+	t.Run("return multiple value with custom message", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound() (id int64, name string)
+}
+`
+
+		exp := `package main
+
+type UserNotFound struct {
+	Id   int64
+	Name string
+}
+
+func (e *UserNotFound) UserNotFound() (int64, string) {
+	return e.Id, e.Name
+}
+func (e *UserNotFound) Error() string {
+	return fmt.Sprintf("custom message with %d and %s", e.Id, e.Name)
+}
+`
+		msg := "custom message with %d and %s"
+		helper(t, src, "userNotFound", exp, msg)
 	})
 }
