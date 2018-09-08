@@ -1,25 +1,53 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
-	"fmt"
-
 	"github.com/akito0107/generr"
+	"github.com/pkg/errors"
+	"github.com/urfave/cli"
 )
 
-var typename = flag.String("type", "", "pass error type name (required)")
-var dryrun = flag.Bool("dryrun", false, "dryrun (default=false)")
-var genImpl = flag.Bool("impl", false, "generate error implementation")
-
 func main() {
-	flag.Parse()
-	if *typename == "" {
-		log.Fatal("must be passed type name")
+	app := cli.NewApp()
+	app.Name = "generr"
+	app.Usage = "generate custom error from interface"
+	app.Action = run
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "type, t",
+			Usage: "error interface name (required)",
+		},
+		cli.BoolFlag{
+			Name:  "dryrun",
+			Usage: "dryrun (default=false)",
+		},
+		cli.BoolFlag{
+			Name:  "implementation, i",
+			Usage: "generate error implementation (default=false)",
+		},
+		cli.StringFlag{
+			Name:  "message, m",
+			Usage: "custom error message (optional)",
+		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(ctx *cli.Context) error {
+	typename := ctx.String("type")
+	message := ctx.String("message")
+	dryrun := ctx.Bool("dryrun")
+	impl := ctx.Bool("implementation")
+	if typename == "" {
+		return errors.New("type is required")
 	}
 
 	var filenames []string
@@ -35,25 +63,25 @@ func main() {
 	}
 
 	for _, f := range filenames {
-		ok, err := generate(f)
+		ok, err := generate(f, typename, message, dryrun, impl)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if ok {
-			return
+			return nil
 		}
 	}
 
-	log.Fatalf("typename %s notfound", *typename)
+	return errors.Errorf("typename %s is not found", typename)
 }
 
-func generate(filename string) (bool, error) {
+func generate(filename, typename, message string, dryrun, impl bool) (bool, error) {
 	r, err := os.Open(filename)
 	if err != nil {
 		return false, err
 	}
 	defer r.Close()
-	pkgName, ts, err := generr.Parse(r, *typename)
+	pkgName, ts, err := generr.Parse(r, typename)
 	if err != nil && generr.IsTypeNotFound(err) {
 		return false, nil
 	} else if err != nil {
@@ -64,13 +92,13 @@ func generate(filename string) (bool, error) {
 	if err := g.AppendCheckFunction(); err != nil {
 		return false, err
 	}
-	if *genImpl {
-		if err := g.AppendErrorImplementation(); err != nil {
+	if impl {
+		if err := g.AppendErrorImplementation(message); err != nil {
 			return false, err
 		}
 	}
 
-	if *dryrun {
+	if dryrun {
 		g.Out(os.Stdout)
 	} else {
 		filename := fmt.Sprintf("%s_impl.go", ts.Name.Name)

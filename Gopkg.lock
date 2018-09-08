@@ -34,8 +34,16 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
+  name = "github.com/urfave/cli"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
+  version = "v1.20.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:a05bd2d296bc727082abcb63ff52615b4dcc6219d8b61e99fd83d605dc779a18"
+  digest = "1:bd157a825f4406d3bf268dd90e2fc56fe1ca3f34a857282e45587af6cd92270e"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -52,6 +60,7 @@
     "github.com/andreyvit/diff",
     "github.com/iancoleman/strcase",
     "github.com/pkg/errors",
+    "github.com/urfave/cli",
     "golang.org/x/tools/imports",
   ]
   solver-name = "gps-cdcl"
