@@ -16,6 +16,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "generr"
 	app.Usage = "generate custom error from interface"
+	app.UsageText = "generr [OPTIONS]"
 	app.Action = run
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
