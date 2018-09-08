@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/akito0107/generr
+
+    environment:
+      DEP_VERSION: 0.5.0
+
+    steps:
+      - checkout
+      - run: curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep && chmod +x $GOPATH/bin/dep
+      - run: dep ensure
+      - run: make install
+      - run:
+          name: build
+          command: make
+      - run:
+          name: run unit tests
+          command: make test
