@@ -39,8 +39,18 @@ func (g *Generator) AppendPackage() {
 	}
 }
 
-func (g *Generator) AppendCheckFunction() error {
-	d, err := appendCheckFunction(g.ts)
+func (g *Generator) AppendPkgErrorImportSpec() {
+	g.f.Imports = []*ast.ImportSpec{
+		{
+			Path: &ast.BasicLit{
+				Value: "github.com/pkg/errors",
+			},
+		},
+	}
+}
+
+func (g *Generator) AppendCheckFunction(withCause bool) error {
+	d, err := appendCheckFunction(g.ts, withCause)
 	if err != nil {
 		return err
 	}
@@ -71,7 +81,7 @@ func (g *Generator) Out(w io.Writer) error {
 	return nil
 }
 
-func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
+func appendCheckFunction(ts *ast.TypeSpec, withCause bool) ([]ast.Decl, error) {
 	it, ok := ts.Type.(*ast.InterfaceType)
 	if !ok {
 		return nil, errors.Errorf("type %+v is not a interface", ts.Type)
@@ -93,6 +103,27 @@ func appendCheckFunction(ts *ast.TypeSpec) ([]ast.Decl, error) {
 
 	assignStr := "_"
 	var bodyStmt []ast.Stmt
+
+	if withCause {
+		bodyStmt = append(bodyStmt, &ast.AssignStmt{
+			Tok: token.ASSIGN,
+			Lhs: []ast.Expr{
+				ast.NewIdent("err"),
+			},
+			Rhs: []ast.Expr{
+				&ast.CallExpr{
+					Args: []ast.Expr{
+						ast.NewIdent("err"),
+					},
+					Fun: &ast.SelectorExpr{
+						X:   ast.NewIdent("errors"),
+						Sel: ast.NewIdent("Cause"),
+					},
+				},
+			},
+		})
+	}
+
 	var ifbodyStmt []ast.Stmt
 	var returnExprs []ast.Expr
 

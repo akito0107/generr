@@ -33,7 +33,7 @@ func TestGenerator_AppendCheckFunction(t *testing.T) {
 		}
 		g := NewGenerator(n, s)
 		g.AppendPackage()
-		if err := g.AppendCheckFunction(); err != nil {
+		if err := g.AppendCheckFunction(false); err != nil {
 			t.Fatal(err)
 		}
 		var buf bytes.Buffer
@@ -106,6 +106,49 @@ func IsUserNotFound(err error) (bool, int64, string) {
 `
 		helper(t, src, "userNotFound", exp)
 	})
+}
+
+func TestGenerator_AppendCheckFunctionWithCause(t *testing.T) {
+
+	helper := func(t *testing.T, src, typename, exp string) {
+		t.Helper()
+		n, s, err := Parse(bytes.NewBufferString(src), typename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g := NewGenerator(n, s)
+		g.AppendPackage()
+		g.AppendPkgErrorImportSpec()
+		if err := g.AppendCheckFunction(true); err != nil {
+			t.Fatal(err)
+		}
+		var buf bytes.Buffer
+		format.Node(&buf, token.NewFileSet(), g.f)
+		if act := buf.String(); act != exp {
+			t.Error(diff.LineDiff(exp, act))
+		}
+	}
+
+	t.Run("return no value", func(t *testing.T) {
+		src := `package main
+
+type userNotFound interface {
+	UserNotFound()
+}
+`
+		exp := `package main
+
+func IsUserNotFound(err error) bool {
+	err = errors.Cause(err)
+	if _, ok := err.(userNotFound); ok {
+		return true
+	}
+	return false
+}
+`
+		helper(t, src, "userNotFound", exp)
+	})
+
 }
 
 func TestGenerator_AppendErrorImplementation(t *testing.T) {

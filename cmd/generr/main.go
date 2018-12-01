@@ -35,6 +35,10 @@ func main() {
 			Name:  "message, m",
 			Usage: "custom error message (optional)",
 		},
+		cli.BoolFlag{
+			Name:  "cause, c",
+			Usage: "append cause check (default=false)",
+		},
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -46,6 +50,7 @@ func run(ctx *cli.Context) error {
 	typename := ctx.String("type")
 	message := ctx.String("message")
 	dryrun := ctx.Bool("dryrun")
+	cause := ctx.Bool("cause")
 	impl := ctx.Bool("implementation")
 	if typename == "" {
 		return errors.New("type is required")
@@ -64,7 +69,7 @@ func run(ctx *cli.Context) error {
 	}
 
 	for _, f := range filenames {
-		ok, err := generate(f, typename, message, dryrun, impl)
+		ok, err := generate(f, typename, message, dryrun, impl, cause)
 		if err != nil {
 			return err
 		}
@@ -76,7 +81,7 @@ func run(ctx *cli.Context) error {
 	return errors.Errorf("typename %s is not found", typename)
 }
 
-func generate(filename, typename, message string, dryrun, impl bool) (bool, error) {
+func generate(filename, typename, message string, dryrun, impl, cause bool) (bool, error) {
 	r, err := os.Open(filename)
 	if err != nil {
 		return false, err
@@ -90,7 +95,7 @@ func generate(filename, typename, message string, dryrun, impl bool) (bool, erro
 	}
 	g := generr.NewGenerator(pkgName, ts)
 	g.AppendPackage()
-	if err := g.AppendCheckFunction(); err != nil {
+	if err := g.AppendCheckFunction(cause); err != nil {
 		return false, err
 	}
 	if impl {
