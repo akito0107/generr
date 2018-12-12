@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/akito0107/generr"
@@ -31,6 +32,18 @@ func main() {
 			Name:  "implementation, i",
 			Usage: "generate error implementation (default=false)",
 		},
+		cli.BoolFlag{
+			Name:  "unify, u",
+			Usage: "(only affects with --implementation option) unify implementation with checking function (default=false)",
+		},
+		cli.StringFlag{
+			Name:  "implementation-output-path, o",
+			Usage: "(only affects with --implementation option) implementation output path (default=current directory)",
+		},
+		cli.StringFlag{
+			Name:  "implementation-type, it",
+			Usage: "(only affects with --implementation option) implementation type name (default=capitalized given type name)",
+		},
 		cli.StringFlag{
 			Name:  "message, m",
 			Usage: "custom error message (optional)",
@@ -52,6 +65,10 @@ func run(ctx *cli.Context) error {
 	dryrun := ctx.Bool("dryrun")
 	cause := ctx.Bool("cause")
 	impl := ctx.Bool("implementation")
+	unify := ctx.Bool("unify")
+	outpath := ctx.String("implementation-output-path")
+	it := ctx.String("implementation-type")
+
 	if typename == "" {
 		return errors.New("type is required")
 	}
@@ -69,7 +86,7 @@ func run(ctx *cli.Context) error {
 	}
 
 	for _, f := range filenames {
-		ok, err := generate(f, typename, message, dryrun, impl, cause)
+		ok, err := generate(f, typename, message, outpath, it, dryrun, impl, cause, unify)
 		if err != nil {
 			return err
 		}
@@ -81,7 +98,7 @@ func run(ctx *cli.Context) error {
 	return errors.Errorf("typename %s is not found", typename)
 }
 
-func generate(filename, typename, message string, dryrun, impl, cause bool) (bool, error) {
+func generate(filename, typename, message, outpath, it string, dryrun, impl, cause, unify bool) (bool, error) {
 	r, err := os.Open(filename)
 	if err != nil {
 		return false, err
@@ -93,34 +110,72 @@ func generate(filename, typename, message string, dryrun, impl, cause bool) (boo
 	} else if err != nil {
 		return false, err
 	}
-	g := generr.NewGenerator(pkgName, ts)
-	g.AppendPackage()
-	if err := g.AppendCheckFunction(cause); err != nil {
-		return false, err
-	}
-	if impl {
-		if err := g.AppendErrorImplementation(message); err != nil {
+	// only check function
+	if !impl {
+		g := generr.NewGenerator(pkgName, ts)
+		g.AppendPackage()
+		if err := g.AppendCheckFunction(cause); err != nil {
 			return false, err
 		}
+		if err := write(g, fmt.Sprintf("%s_check.go", ts.Name.Name), dryrun); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
-	if dryrun {
-		g.Out(os.Stdout)
+	if unify {
+		g := generr.NewGenerator(pkgName, ts)
+		g.AppendPackage()
+		if err := g.AppendCheckFunction(cause); err != nil {
+			return false, err
+		}
+		if err := g.AppendErrorImplementation(it, message); err != nil {
+			return false, err
+		}
+		if err := write(g, fmt.Sprintf("%s_impl.go", ts.Name.Name), dryrun); err != nil {
+			return false, err
+		}
+		return true, nil
 	} else {
-		filename := fmt.Sprintf("%s_impl.go", ts.Name.Name)
+		g := generr.NewGenerator(pkgName, ts)
+		g.AppendPackage()
+		if err := g.AppendCheckFunction(cause); err != nil {
+			return false, err
+		}
+		if err := write(g, fmt.Sprintf("%s_check.go", ts.Name.Name), dryrun); err != nil {
+			return false, err
+		}
 
-		if _, err := os.Stat(filename); !os.IsNotExist(err) {
-			os.Remove(filename)
+		outpackage := pkgName
+		if outpath == "" {
+			_, outpackage = filepath.Split(outpath)
 		}
-		f, err := os.Create(filename)
-		if err != nil {
+		g = generr.NewGenerator(outpackage, ts)
+		g.AppendPackage()
+		if err := g.AppendErrorImplementation(it, message); err != nil {
 			return false, err
 		}
-		defer f.Close()
-		if err := g.Out(f); err != nil {
+		p := filepath.Join(outpath, fmt.Sprintf("%s_impl.go", ts.Name.Name))
+		if err := write(g, p, dryrun); err != nil {
 			return false, err
 		}
+
+		return true, nil
 	}
+}
 
-	return true, nil
+func write(g *generr.Generator, fpath string, dryrun bool) error {
+	if dryrun {
+		return g.Out(os.Stdout)
+	}
+	if _, err := os.Stat(fpath); !os.IsNotExist(err) {
+		os.Remove(fpath)
+	}
+	f, err := os.Create(fpath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return g.Out(f)
 }
