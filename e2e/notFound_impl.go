@@ -3,13 +3,6 @@ package e2e
 
 import "fmt"
 
-func IsNotFound(err error) bool {
-	if _, ok := err.(notFound); ok {
-		return true
-	}
-	return false
-}
-
 type NotFound struct {
 }
 

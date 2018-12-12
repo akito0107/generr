@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate generr -t typeNotFound -i
+//go:generate generr -t typeNotFound -i -u
 type typeNotFound interface {
 	TypeNotFound()
 }

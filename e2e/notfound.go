@@ -5,7 +5,7 @@ type userNotFound interface {
 	UserNotFound() (id int64)
 }
 
-// go:generate generr -t notFound -i -u
+//go:generate generr -t notFound -i
 type notFound interface {
 	NotFound()
 }

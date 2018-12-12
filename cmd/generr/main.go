@@ -147,7 +147,7 @@ func generate(filename, typename, message, outpath, it string, dryrun, impl, cau
 		}
 
 		outpackage := pkgName
-		if outpath == "" {
+		if outpath != "" {
 			_, outpackage = filepath.Split(outpath)
 		}
 		g = generr.NewGenerator(outpackage, ts)
