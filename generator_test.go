@@ -161,7 +161,7 @@ func TestGenerator_AppendErrorImplementation(t *testing.T) {
 		}
 		g := NewGenerator(n, s)
 		g.AppendPackage()
-		if err := g.AppendErrorImplementation(msg); err != nil {
+		if err := g.AppendErrorImplementation("", msg); err != nil {
 			t.Fatal(err)
 		}
 		var buf bytes.Buffer
