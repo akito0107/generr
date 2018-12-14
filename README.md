@@ -32,7 +32,7 @@ type userNotFound interface {
 $ generr -t userNotFound
 ```
 
-3. Then, you can get implementation file which named `userNotFound_impl.go`.
+3. Then, you can get implementation file which named `userNotFound_check.go`.
 This file contains the function which identifies whether given error is the one that we are defined before.
 
 ```go
@@ -49,8 +49,29 @@ func IsUserNotFound(err error) (bool, int64) {
 4. You can also generate struct which implements `error` and the `interface` with `-i` option.
 
 ```sh
-$ generr -t userNotFound -i
+$ generr -t userNotFound -i -it userNotFound -o ../otherpackage
 ```
+You get generated file named `userNotFound_impl.go`.
+
+```go
+package otherpackage
+
+type userNotFound struct {
+	Id int64
+}
+
+func (e *userNotFound) UserNotFound() int64 {
+	return e.Id
+}
+func (e *userNotFound) Error() string {
+	return fmt.Sprintf("userNotFound Id: %v", e.Id)
+}
+```
+
+You can pass struct name with `-it` option (default case is capitalized name given with `-t`).
+`-o` option (default location is current directory and package).
+
+5. You can unify `check` and `impl` files with `-u` option.
 
 ```go
 func IsUserNotFound(err error) (bool, int64) {
@@ -72,12 +93,13 @@ func (e *UserNotFound) UserNotFound() int64 {
 func (e *UserNotFound) Error() string {
 	return fmt.Sprintf("userNotFound Id: %v", e.Id)
 }
+
 ```
 
-5. You can also use `go generate`
+6. You can also use `go generate`
 
 ```go
-//go:generate generr -t notFound -i
+//go:generate generr -t notFound -i -u
 type userNotFound interface {
 	UserNotFound() (id int64)
 }
@@ -89,7 +111,7 @@ $ go generate // you can get same results.
 
 6. You can pass custom error message with `-m` flag.
 ```go
-//go:generate generr -t emailNotFound -m "email %s not found" -i
+//go:generate generr -t emailNotFound -m "email %s not found" -i -u
 type emailNotFound interface{
     EmailNotFound() (email string)	
 }
@@ -147,12 +169,16 @@ COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --type value, -t value     error interface name (required)
-   --dryrun                   dryrun (default=false)
-   --implementation, -i       generate error implementation (default=false)
-   --message value, -m value  custom error message (optional)
-   --help, -h                 show help
-   --version, -v              print the version
+   --type value, -t value                        error interface name (required)
+   --dryrun                                      dryrun (default=false)
+   --implementation, -i                          generate error implementation (default=false)
+   --unify, -u                                   (only affects with --implementation option) unify implementation with checking function (default=false)
+   --implementation-output-path value, -o value  (only affects with --implementation option) implementation output path (default=current directory)
+   --implementation-type value, --it value       (only affects with --implementation option) implementation type name (default=capitalized given type name)
+   --message value, -m value                     custom error message (optional)
+   --cause, -c                                   append cause check (default=false)
+   --help, -h                                    show help
+   --version, -v                                 print the version
 ```
 
 ## License
