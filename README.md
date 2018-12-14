@@ -72,6 +72,9 @@ You can pass struct name with `-it` option (default case is capitalized name giv
 `-o` option (default location is current directory and package).
 
 5. You can unify `check` and `impl` files with `-u` option.
+```sh
+$ generr -t userNotFound -i -u
+```
 
 ```go
 func IsUserNotFound(err error) (bool, int64) {
