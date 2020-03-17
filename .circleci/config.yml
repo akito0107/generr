@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/akito0107/generr
+    working_directory: /go/src/github.com/hiko1129/generr
 
     environment:
       DEP_VERSION: 0.5.0

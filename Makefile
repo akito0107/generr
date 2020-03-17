@@ -2,7 +2,7 @@ NAME := dicon
 VERSION := $(shell git tag -l | tail -1)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -X 'main.version=$(VERSION)' -X 'main.revision=$(REVISION)'
-PACKAGENAME := github.com/akito0107/generr
+PACKAGENAME := github.com/hiko1129/generr
 
 .PHONY: setup test main clean install
 

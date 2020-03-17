@@ -1,7 +1,7 @@
 # generr
 
-[![CircleCI](https://circleci.com/gh/akito0107/generr.svg?style=svg)](https://circleci.com/gh/akito0107/generr)
-[![Maintainability](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/maintainability)](https://codeclimate.com/github/akito0107/generr/maintainability)[![Test Coverage](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/test_coverage)](https://codeclimate.com/github/akito0107/generr/test_coverage)
+[![CircleCI](https://circleci.com/gh/hiko1129/generr.svg?style=svg)](https://circleci.com/gh/hiko1129/generr)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/maintainability)](https://codeclimate.com/github/hiko1129/generr/maintainability)[![Test Coverage](https://api.codeclimate.com/v1/badges/5acb46b675867eaa697e/test_coverage)](https://codeclimate.com/github/hiko1129/generr/test_coverage)
 
 generate error utilities for golang.
 
@@ -16,7 +16,7 @@ this command generate custom error utilities from simple `interface` declaration
 
 ### Installing
 ```
-$ go get -u github.com/akito0107/generr/cmd/generr
+$ go get -u github.com/hiko1129/generr/cmd/generr
 ```
 
 ### How to use

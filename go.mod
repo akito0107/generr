@@ -3,6 +3,7 @@ module github.com/hiko1129/generr
 go 1.13
 
 require (
+	github.com/hiko1129/generr v1.0.0
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/pkg/errors v0.8.0

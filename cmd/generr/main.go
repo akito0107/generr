@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/akito0107/generr"
+	"github.com/hiko1129/generr"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
