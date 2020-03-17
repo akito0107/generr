@@ -1,4 +1,4 @@
-module github.com/akito0107/generr
+module github.com/hiko1129/generr
 
 go 1.13
 
